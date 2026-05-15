@@ -62,7 +62,6 @@
         #gaya-face { font-size: 45px; display: block; margin-bottom: 10px; }
         .label { font-size: 10px; color: var(--accent); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 5px; }
 
-        /* OVERLAY VITÓRIA */
         #victory-screen {
             position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000;
             display: none; flex-direction: column; align-items: center; justify-content: center;
@@ -94,7 +93,7 @@
         <button class="btn-start" onclick="confirmSetup()">CONFIRMAR CONFIGS</button>
     </div>
     <div id="coin-box">
-        <p class="label">SORTEANDO REDE...</p>
+        <p class="label">SORTEANDO COR DA ALIANÇA...</p>
         <div id="coin" class="coin">?</div>
         <button id="btn-flip" class="btn-start" onclick="flipCoin()">GIRAR MOEDA</button>
     </div>
@@ -102,7 +101,7 @@
 
 <div id="game-ui">
     <div id="timer-container"><div id="timer-bar"></div></div>
-    <div id="status" style="font-family:'Orbitron'; color:var(--accent); margin-bottom:15px; letter-spacing:2px;">LINK ESTÁVEL</div>
+    <div id="status" style="font-family:'Orbitron'; color:var(--accent); margin-bottom:15px; letter-spacing:2px;">SISTEMA OK</div>
     <div class="game-container">
         <div class="adv-track"><div id="adv-bar" style="height: 50%;"></div></div>
         <div id="board"></div>
@@ -125,17 +124,40 @@
 <script>
 const PIECES = {wK:'♔',wQ:'♕',wR:'♖',wB:'♗',wN:'♘',wP:'♙',bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:'♟'};
 const VALUES = { P: 1, N: 3, B: 3, R: 5, Q: 9, K: 1000 };
-let board = [
-    ['bR','bN','bB','bQ','bK','bB','bN','bR'],['bP','bP','bP','bP','bP','bP','bP','bP'],
-    [null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null],
-    [null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null],
-    ['wP','wP','wP','wP','wP','wP','wP','wP'],['wR','wN','wB','wQ','wK','wB','wN','wR']
-];
+
+let board = []; 
 let turn = 'w', playerColor = 'w', selected = null, legalMoves = [];
 let timeLeft = 60, timerInterval = null, maxTime = 60;
 
 const cl = p => p ? p[0] : null;
 const tp = p => p ? p.slice(1) : null;
+
+// Inicializa o tabuleiro baseado na cor sorteada (Jogador sempre em baixo)
+function initBoard(color) {
+    if (color === 'w') {
+        board = [
+            ['bR','bN','bB','bQ','bK','bB','bN','bR'],
+            ['bP','bP','bP','bP','bP','bP','bP','bP'],
+            [null,null,null,null,null,null,null,null],
+            [null,null,null,null,null,null,null,null],
+            [null,null,null,null,null,null,null,null],
+            [null,null,null,null,null,null,null,null],
+            ['wP','wP','wP','wP','wP','wP','wP','wP'],
+            ['wR','wN','wB','wQ','wK','wB','wN','wR']
+        ];
+    } else {
+        board = [
+            ['wR','wN','wB','wK','wQ','wB','wN','wR'],
+            ['wP','wP','wP','wP','wP','wP','wP','wP'],
+            [null,null,null,null,null,null,null,null],
+            [null,null,null,null,null,null,null,null],
+            [null,null,null,null,null,null,null,null],
+            [null,null,null,null,null,null,null,null],
+            ['bP','bP','bP','bP','bP','bP','bP','bP'],
+            ['bR','bN','bB','bK','bQ','bB','bN','bR']
+        ];
+    }
+}
 
 function confirmSetup() {
     document.getElementById('display-name').textContent = document.getElementById('player-name').value || "OPERADOR";
@@ -151,6 +173,7 @@ function flipCoin() {
     setTimeout(() => {
         coin.classList.remove('flipping');
         playerColor = Math.random() > 0.5 ? 'w' : 'b';
+        initBoard(playerColor); 
         coin.textContent = playerColor === 'w' ? '♔' : '♚';
         coin.style.color = playerColor === 'w' ? '#00ff88' : '#ff6b35';
         setTimeout(() => {
@@ -162,39 +185,23 @@ function flipCoin() {
     }, 1500);
 }
 
-// LOGICA DE TURNO POR TEMPO (PERDE A VEZ)
 function handleTimeout() {
     clearInterval(timerInterval);
-    document.getElementById('status').textContent = "TIME OUT! TROCANDO TURNO...";
-    document.getElementById('status').style.color = "var(--accent2)";
-    
-    // Troca o turno sem mover peça
+    document.getElementById('status').textContent = "TIMEOUT! TROCANDO TURNO...";
     turn = turn === 'w' ? 'b' : 'w';
-    selected = null;
-    legalMoves = [];
-    
-    setTimeout(() => {
-        document.getElementById('status').style.color = "var(--accent)";
-        render();
-        startTurn();
-    }, 1500);
+    selected = null; legalMoves = [];
+    setTimeout(() => { startTurn(); render(); }, 1000);
 }
 
 function startTurn() {
     clearInterval(timerInterval); 
     timeLeft = maxTime; 
     updateUI();
-    
     timerInterval = setInterval(() => {
-        timeLeft--; 
-        updateUI();
+        timeLeft--; updateUI();
         if(timeLeft <= 0) handleTimeout();
     }, 1000);
-
-    if(turn !== playerColor) {
-        // Delay pequeno para a IA não jogar instantaneamente ao trocar turno
-        setTimeout(gayaMove, 1000);
-    }
+    if(turn !== playerColor) setTimeout(gayaMove, 1000);
 }
 
 function updateUI() {
@@ -206,10 +213,17 @@ function updateUI() {
 function getRawMoves(r, c, b) {
     const color = cl(b[r][c]), type = tp(b[r][c]);
     let m = []; const inB = (nr, nc) => nr>=0 && nr<8 && nc>=0 && nc<8;
+    
+    // Ajuste de direção do peão (Jogador sempre sobe, IA sempre desce)
+    const pColor = cl(b[r][c]);
+    const dir = pColor === playerColor ? -1 : 1;
+
     if(type==='P') {
-        const d = color==='w'?-1:1;
-        if(inB(r+d,c) && !b[r+d][c]) { m.push([r+d,c]); if(r===(color==='w'?6:1) && !b[r+2*d][c]) m.push([r+2*d,c]); }
-        [[-1,d],[1,d]].forEach(p => { if(inB(r+p[1],c+p[0]) && b[r+p[1]][c+p[0]] && cl(b[r+p[1]][c+p[0]])!==color) m.push([r+p[1],c+p[0]]); });
+        if(inB(r+dir,c) && !b[r+dir][c]) { 
+            m.push([r+dir,c]); 
+            if(r===(pColor === playerColor ? 6 : 1) && !b[r+2*dir][c]) m.push([r+2*dir,c]); 
+        }
+        [[-1,dir],[1,dir]].forEach(p => { if(inB(r+p[1],c+p[0]) && b[r+p[1]][c+p[0]] && cl(b[r+p[1]][c+p[0]])!==color) m.push([r+p[1],c+p[0]]); });
     } else if(type==='N') {
         [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(p => { if(inB(r+p[0],c+p[1]) && (!b[r+p[0]][c+p[1]] || cl(b[r+p[0]][c+p[1]])!==color)) m.push([r+p[0],c+p[1]]); });
     } else {
@@ -245,7 +259,6 @@ function getLegalMoves(r,c) {
 }
 
 function gayaMove() {
-    if(turn === playerColor) return; // IA só joga na vez dela
     const gColor = playerColor==='w'?'b':'w';
     let all = [];
     for(let r=0;r<8;r++) for(let c=0;c<8;c++) {

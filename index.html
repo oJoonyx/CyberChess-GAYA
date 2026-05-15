@@ -18,30 +18,17 @@
             min-height:100vh; overflow:hidden;
         }
 
-        /* TELA INICIAL REFORMULADA */
+        /* TELA INICIAL */
         #intro-screen {
             position: fixed; inset: 0; background: var(--bg); z-index: 1000;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             transition: opacity 0.8s ease; text-align: center; padding: 20px;
         }
         .intro-title { font-family: 'Orbitron'; font-size: 2.5rem; color: var(--accent); text-shadow: 0 0 20px var(--accent); margin-bottom: 30px; }
-        
-        .setup-box { 
-            display: flex; flex-direction: column; gap: 15px; width: 320px; 
-            background: rgba(0,255,136,0.05); padding: 25px; border: 1px solid var(--border);
-            box-shadow: 0 0 40px rgba(0,0,0,0.5);
-        }
-        
-        .input-cyber, .select-cyber {
-            background: rgba(0,0,0,0.7); border: 1px solid var(--accent); color: var(--accent);
-            padding: 12px; font-family: 'Orbitron'; text-align: center; outline: none; font-size: 12px;
-        }
+        .setup-box { display: flex; flex-direction: column; gap: 15px; width: 320px; background: rgba(0,255,136,0.05); padding: 25px; border: 1px solid var(--border); }
+        .input-cyber, .select-cyber { background: rgba(0,0,0,0.7); border: 1px solid var(--accent); color: var(--accent); padding: 12px; font-family: 'Orbitron'; text-align: center; outline: none; font-size: 12px; }
 
-        .btn-start { 
-            padding: 15px; background: transparent; border: 1px solid var(--accent); 
-            color: var(--accent); cursor: pointer; font-family: 'Orbitron'; 
-            letter-spacing: 2px; transition: 0.3s; margin-top: 10px;
-        }
+        .btn-start { padding: 15px; background: transparent; border: 1px solid var(--accent); color: var(--accent); cursor: pointer; font-family: 'Orbitron'; letter-spacing: 2px; transition: 0.3s; margin-top: 10px; }
         .btn-start:hover { background: var(--accent); color: var(--bg); box-shadow: 0 0 30px var(--accent); }
 
         #coin-box { display: none; margin-top: 20px; animation: fadeIn 0.5s forwards; }
@@ -57,7 +44,7 @@
         .adv-track { width: 14px; height: 520px; background: #111; border: 1px solid var(--border); border-radius: 10px; position: relative; overflow: hidden; }
         #adv-bar { width: 100%; background: var(--accent); position: absolute; bottom: 0; transition: 0.8s height ease; }
 
-        /* TABULEIRO FIXO */
+        /* TABULEIRO */
         #board { display: grid; grid-template-columns: repeat(8, 65px); border: 4px solid var(--border); background: #000; perspective: 1000px; }
         .sq { width: 65px; height: 65px; display: flex; align-items: center; justify-content: center; font-size: 40px; cursor: pointer; position: relative; transform-style: preserve-3d; }
         .sq.light { background: var(--sq-light); } .sq.dark { background: var(--sq-dark); }
@@ -75,35 +62,39 @@
         #gaya-face { font-size: 45px; display: block; margin-bottom: 10px; }
         .label { font-size: 10px; color: var(--accent); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 5px; }
 
+        /* OVERLAY VITÓRIA */
+        #victory-screen {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; animation: fadeIn 0.5s forwards;
+        }
+        .victory-msg { font-family: 'Orbitron'; font-size: 2.2rem; color: var(--accent); text-shadow: 0 0 30px var(--accent); margin-bottom: 20px; }
+
         @keyframes flip { from { transform: rotateY(0); } to { transform: rotateY(360deg); } }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .glitch-check { animation: shake 0.2s infinite; }
         @keyframes shake { 0% { transform: translate(0); } 25% { transform: translate(3px,-3px); } 75% { transform: translate(-3px,3px); } }
-        .particle { position: fixed; pointer-events: none; animation: fly 1s forwards; }
-        @keyframes fly { to { transform: translate(var(--x), var(--y)) scale(0); opacity: 0; } }
+        .particle { position: fixed; pointer-events: none; animation: fly 1.2s forwards; z-index: 2100; border-radius: 50%; }
+        @keyframes fly { to { transform: translate(var(--x), var(--y)) rotate(360deg) scale(0); opacity: 0; } }
     </style>
 </head>
 <body>
 
 <div id="intro-screen">
     <h1 class="intro-title">AVANTE, MESTRE</h1>
-    
     <div id="setup-area" class="setup-box">
-        <label class="label">Identificação do Operador</label>
+        <label class="label">Identificação</label>
         <input type="text" id="player-name" class="input-cyber" placeholder="NICKNAME" maxlength="12">
-        
         <label class="label">Nível de Expansão</label>
         <select id="difficulty-setup" class="select-cyber">
-            <option value="60">MODO: FÁCIL (60s)</option>
-            <option value="30">MODO: AGRESSIVO (30s)</option>
-            <option value="10">MODO: PROFISSIONAL (10s)</option>
+            <option value="60">FÁCIL (60s)</option>
+            <option value="30">AGRESSIVO (30s)</option>
+            <option value="10">PROFISSIONAL (10s)</option>
         </select>
-        
-        <button class="btn-start" onclick="confirmSetup()">CONFIRMAR CONFIGURAÇÕES</button>
+        <button class="btn-start" onclick="confirmSetup()">CONFIRMAR CONFIGS</button>
     </div>
-
     <div id="coin-box">
-        <p class="label" style="font-size:12px; color:var(--accent2)">AGUARDANDO SORTEIO DE REDE...</p>
+        <p class="label">SORTEANDO REDE...</p>
         <div id="coin" class="coin">?</div>
         <button id="btn-flip" class="btn-start" onclick="flipCoin()">GIRAR MOEDA</button>
     </div>
@@ -111,25 +102,24 @@
 
 <div id="game-ui">
     <div id="timer-container"><div id="timer-bar"></div></div>
-    <div id="status" style="font-family:'Orbitron'; color:var(--accent); margin-bottom:15px; letter-spacing:3px;">LINK ESTÁVEL</div>
-    
+    <div id="status" style="font-family:'Orbitron'; color:var(--accent); margin-bottom:15px; letter-spacing:2px;">LINK ESTÁVEL</div>
     <div class="game-container">
         <div class="adv-track"><div id="adv-bar" style="height: 50%;"></div></div>
-        
         <div id="board"></div>
-
         <div class="cyber-panel">
             <span id="gaya-face">🤖</span>
-            <div class="label">Status GAYA</div>
             <div id="diff-display" style="font-size:10px; color:var(--accent2); margin-bottom:15px;">---</div>
-            
-            <hr style="border:0; border-top:1px solid var(--border); margin: 15px 0;">
-            
             <div class="label">Operador</div>
-            <div id="display-name" style="font-family:'Orbitron'; color:var(--accent); font-size:14px; text-transform:uppercase;">---</div>
+            <div id="display-name" style="font-family:'Orbitron'; color:var(--accent); font-size:14px;">---</div>
             <div id="countdown-text" style="font-size: 32px; color: var(--accent2); margin-top: 10px; font-weight: bold;">--s</div>
         </div>
     </div>
+</div>
+
+<div id="victory-screen">
+    <div class="victory-msg" id="victory-text">VITÓRIA!</div>
+    <p class="label" id="victory-sub" style="margin-bottom:30px">SISTEMA REINICIALIZADO</p>
+    <button class="btn-start" onclick="location.reload()">REINICIAR BATALHA</button>
 </div>
 
 <script>
@@ -147,57 +137,64 @@ let timeLeft = 60, timerInterval = null, maxTime = 60;
 const cl = p => p ? p[0] : null;
 const tp = p => p ? p.slice(1) : null;
 
-// FLUXO DE SETUP
 function confirmSetup() {
-    const nameInput = document.getElementById('player-name').value.trim();
-    const name = nameInput || "OPERADOR";
-    const diff = document.getElementById('difficulty-setup').value;
-    
-    document.getElementById('display-name').textContent = name;
-    maxTime = parseInt(diff);
-    document.getElementById('diff-display').textContent = diff == "60" ? "MODO: FÁCIL" : (diff == "30" ? "MODO: AGRESSIVO" : "MODO: PROFISSIONAL");
-    
-    // Esconde setup e mostra moeda
+    document.getElementById('display-name').textContent = document.getElementById('player-name').value || "OPERADOR";
+    maxTime = parseInt(document.getElementById('difficulty-setup').value);
+    document.getElementById('diff-display').textContent = maxTime == 60 ? "FÁCIL" : (maxTime == 30 ? "AGRESSIVO" : "PROFISSIONAL");
     document.getElementById('setup-area').style.display = 'none';
     document.getElementById('coin-box').style.display = 'block';
 }
 
 function flipCoin() {
     const coin = document.getElementById('coin');
-    const btn = document.getElementById('btn-flip');
-    btn.disabled = true;
     coin.classList.add('flipping');
-    
     setTimeout(() => {
         coin.classList.remove('flipping');
         playerColor = Math.random() > 0.5 ? 'w' : 'b';
         coin.textContent = playerColor === 'w' ? '♔' : '♚';
         coin.style.color = playerColor === 'w' ? '#00ff88' : '#ff6b35';
-        
         setTimeout(() => {
-            document.getElementById('intro-screen').style.opacity = '0';
-            setTimeout(() => {
-                document.getElementById('intro-screen').style.display = 'none';
-                document.getElementById('game-ui').style.display = 'flex';
-                document.getElementById('game-ui').style.opacity = '1';
-                startTurn();
-                render();
-            }, 800);
+            document.getElementById('intro-screen').style.display = 'none';
+            document.getElementById('game-ui').style.display = 'flex';
+            document.getElementById('game-ui').style.opacity = '1';
+            startTurn(); render();
         }, 1200);
     }, 1500);
 }
 
-// CRONÔMETRO
-function startTurn() {
+// LOGICA DE TURNO POR TEMPO (PERDE A VEZ)
+function handleTimeout() {
     clearInterval(timerInterval);
-    timeLeft = maxTime;
+    document.getElementById('status').textContent = "TIME OUT! TROCANDO TURNO...";
+    document.getElementById('status').style.color = "var(--accent2)";
+    
+    // Troca o turno sem mover peça
+    turn = turn === 'w' ? 'b' : 'w';
+    selected = null;
+    legalMoves = [];
+    
+    setTimeout(() => {
+        document.getElementById('status').style.color = "var(--accent)";
+        render();
+        startTurn();
+    }, 1500);
+}
+
+function startTurn() {
+    clearInterval(timerInterval); 
+    timeLeft = maxTime; 
     updateUI();
-    if(turn === playerColor) {
-        timerInterval = setInterval(() => {
-            timeLeft--; updateUI();
-            if(timeLeft <= 0) victoryEffect("TIMEOUT! GAYA VENCEU.");
-        }, 1000);
-    } else { gayaMove(); }
+    
+    timerInterval = setInterval(() => {
+        timeLeft--; 
+        updateUI();
+        if(timeLeft <= 0) handleTimeout();
+    }, 1000);
+
+    if(turn !== playerColor) {
+        // Delay pequeno para a IA não jogar instantaneamente ao trocar turno
+        setTimeout(gayaMove, 1000);
+    }
 }
 
 function updateUI() {
@@ -206,7 +203,6 @@ function updateUI() {
     document.getElementById('timer-bar').style.background = timeLeft < 5 ? "#ff0000" : "var(--accent2)";
 }
 
-// MECÂNICA
 function getRawMoves(r, c, b) {
     const color = cl(b[r][c]), type = tp(b[r][c]);
     let m = []; const inB = (nr, nc) => nr>=0 && nr<8 && nc>=0 && nc<8;
@@ -249,6 +245,7 @@ function getLegalMoves(r,c) {
 }
 
 function gayaMove() {
+    if(turn === playerColor) return; // IA só joga na vez dela
     const gColor = playerColor==='w'?'b':'w';
     let all = [];
     for(let r=0;r<8;r++) for(let c=0;c<8;c++) {
@@ -260,11 +257,12 @@ function gayaMove() {
         }
     }
     all.sort((a,b)=>b.s-a.s);
-    if(all[0]) setTimeout(()=>executeMove(all[0].fr,all[0].fc,all[0].tr,all[0].tc), 1000);
+    if(all[0]) executeMove(all[0].fr,all[0].fc,all[0].tr,all[0].tc);
 }
 
 function executeMove(fr,fc,tr,tc) {
-    if(board[tr][tc] && tp(board[tr][tc])==='K') { victoryEffect(cl(board[fr][fc])===playerColor?"CORE INIMIGO DESTRUIDO!":"GAYA DESTRUIU SEU CORE."); return; }
+    const target = board[tr][tc];
+    if(target && tp(target)==='K') { endGame(cl(board[fr][fc])===playerColor?"CORE INIMIGO DESTRUIDO!":"GAYA DESTRUIU SEU CORE."); return; }
     board[tr][tc]=board[fr][fc]; board[fr][fc]=null;
     turn = turn==='w'?'b':'w';
     render(); updateAdvantage(); updateGayaFace(); startTurn();
@@ -272,6 +270,9 @@ function executeMove(fr,fc,tr,tc) {
 
 function render() {
     const bEl = document.getElementById('board'); bEl.innerHTML = '';
+    const status = document.getElementById('status');
+    status.textContent = turn === playerColor ? "► SUA VEZ, OPERADOR" : "► GAYA ANALISANDO...";
+
     if(isCheck(turn,board)) bEl.classList.add('glitch-check'); else bEl.classList.remove('glitch-check');
     for(let r=0;r<8;r++) for(let c=0;c<8;c++) {
         const sq = document.createElement('div'); sq.className = `sq ${(r+c)%2===0?'light':'dark'}`;
@@ -282,7 +283,7 @@ function render() {
             p.textContent = PIECES[board[r][c]]; sq.appendChild(p);
         }
         sq.onclick = () => {
-            if(turn!==playerColor) return;
+            if(turn !== playerColor) return;
             if(selected && legalMoves.some(m=>m[0]===r&&m[1]===c)) { executeMove(selected[0],selected[1],r,c); selected=null; legalMoves=[]; }
             else if(board[r][c] && cl(board[r][c])===playerColor) { selected=[r,c]; legalMoves=getLegalMoves(r,c); render(); }
         };
@@ -303,17 +304,21 @@ function updateGayaFace() {
     else f.textContent = '🤖';
 }
 
-function victoryEffect(m) {
-    clearInterval(timerInterval); document.getElementById('status').textContent = m;
-    document.getElementById('status').style.color = "#ff0000";
-    for(let i=0; i<80; i++) {
-        const p=document.createElement('div'); p.className='particle';
-        p.style.left='50%'; p.style.top='50%'; p.style.width='8px'; p.style.height='8px';
-        p.style.background=`hsl(${Math.random()*360},100%,50%)`;
-        p.style.setProperty('--x',(Math.random()-0.5)*1200+'px'); p.style.setProperty('--y',(Math.random()-0.5)*1200+'px');
-        document.body.appendChild(p); setTimeout(()=>p.remove(),1200);
+function endGame(msg) {
+    clearInterval(timerInterval);
+    document.getElementById('victory-text').textContent = msg;
+    document.getElementById('victory-screen').style.display = 'flex';
+    for(let i=0; i<100; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        p.style.left = '50%'; p.style.top = '50%';
+        p.style.width = '6px'; p.style.height = '6px';
+        p.style.background = i % 2 === 0 ? 'var(--accent)' : 'var(--accent2)';
+        p.style.setProperty('--x', (Math.random()-0.5)*1500 + 'px');
+        p.style.setProperty('--y', (Math.random()-0.5)*1500 + 'px');
+        document.body.appendChild(p);
+        setTimeout(() => p.remove(), 1200);
     }
-    setTimeout(() => location.reload(), 5000);
 }
 </script>
 </body>

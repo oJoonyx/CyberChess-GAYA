@@ -15,22 +15,50 @@
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
         body {
             font-family:'Share Tech Mono',monospace; background:var(--bg); color:#e0e0e0;
-            display:flex; flex-direction:column; align-items:center; padding:20px;
+            display:flex; flex-direction:column; align-items:center; padding:20px; overflow:hidden;
         }
-        .game-container { display: flex; gap: 20px; align-items: center; margin-top: 20px; }
+        
+        /* HEADER & STATUS */
+        #status { font-family: 'Orbitron'; color: var(--accent); letter-spacing: 2px; margin-bottom: 15px; text-shadow: 0 0 10px var(--accent); }
+        
+        /* LAYOUT */
+        .game-container { display: flex; gap: 20px; align-items: center; position: relative; }
+        
+        /* BARRA DE VANTAGEM */
         .adv-track { width: 14px; height: calc(var(--sq)*8); background: var(--sq-dark); border: 1px solid var(--border); border-radius: 20px; position: relative; overflow: hidden; }
-        #adv-bar { width: 100%; background: var(--accent); position: absolute; bottom: 0; transition: height 0.6s ease; box-shadow: 0 0 15px var(--accent); }
-        #board { display: grid; grid-template-columns: repeat(8, var(--sq)); border: 2px solid var(--border); }
-        .sq { width: var(--sq); height: var(--sq); display: flex; align-items: center; justify-content: center; font-size: 38px; cursor: pointer; position: relative; }
-        .sq.light { background: var(--sq-light); } .sq.dark { background: var(--sq-dark); }
-        .sq.selected { background: rgba(0,255,136,0.3) !important; }
-        .sq.moveable::after { content: '●'; font-size: 12px; color: var(--accent2); opacity: 0.5; position: absolute; }
-        .piece { transition: transform 0.1s; z-index: 2; cursor: pointer; }
+        #adv-bar { width: 100%; background: var(--accent); position: absolute; bottom: 0; transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 15px var(--accent); }
+
+        /* TABULEIRO */
+        #board { 
+            display: grid; grid-template-columns: repeat(8, var(--sq)); 
+            border: 2px solid var(--border); position: relative;
+            transition: transform 0.1s;
+        }
+        .sq { width: var(--sq); height: var(--sq); display: flex; align-items: center; justify-content: center; font-size: 38px; cursor: pointer; position: relative; transition: background 0.2s; }
+        .sq.light { background: var(--sq-light); } 
+        .sq.dark { background: var(--sq-dark); }
+        .sq.selected { background: rgba(0,255,136,0.3) !important; box-shadow: inset 0 0 10px var(--accent); }
+        .sq.moveable::after { content: '●'; font-size: 14px; color: var(--accent2); opacity: 0.7; position: absolute; }
+        
+        /* PEÇAS */
+        .piece { transition: transform 0.1s; z-index: 2; cursor: pointer; user-select: none; }
         .piece.w { filter: drop-shadow(0 0 8px var(--accent)); color: #fff; }
         .piece.b { filter: drop-shadow(0 0 8px var(--accent2)); color: #fff; }
-        .particle { position: fixed; pointer-events: none; border-radius: 50%; animation: partAnim var(--p-dur) ease-out forwards; }
+
+        /* INOVAÇÃO: EFEITO GLITCH NO XEQUE */
+        @keyframes glitch {
+            0% { transform: translate(0); filter: hue-rotate(0deg); }
+            20% { transform: translate(-3px, 3px); filter: hue-rotate(90deg); }
+            40% { transform: translate(3px, -3px); }
+            100% { transform: translate(0); }
+        }
+        .glitch-active { animation: glitch 0.2s linear infinite; border-color: #ff0000 !important; box-shadow: 0 0 30px rgba(255,0,0,0.5); }
+
+        /* PARTICULAS */
+        .particle { position: fixed; pointer-events: none; border-radius: 50%; z-index: 100; animation: partAnim var(--p-dur) ease-out forwards; }
         @keyframes partAnim { to { transform: translate(var(--p-tx), var(--p-ty)) scale(0); opacity: 0; } }
-        #status { font-family: 'Orbitron'; color: var(--accent); letter-spacing: 2px; margin-bottom: 10px; }
+
+        @media(max-width: 700px) { :root { --sq: 42px; } .game-container { flex-direction: column-reverse; } .adv-track { width: 100%; height: 12px; } #adv-bar { height: 100% !important; width: 50%; bottom: 0; left: 0; } }
     </style>
 </head>
 <body>
@@ -42,6 +70,30 @@
 </div>
 
 <script>
+/* ══════════════════════════════════════════
+   SISTEMA DE ÁUDIO SINTÉTICO (WEB AUDIO API)
+══════════════════════════════════════════ */
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playTone(freq, type, dur, vol = 0.1) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + dur);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + dur);
+}
+
+const sounds = {
+    move: () => playTone(600, 'sine', 0.1),
+    capture: () => { playTone(150, 'sawtooth', 0.2, 0.2); playTone(80, 'square', 0.3, 0.2); },
+    check: () => { playTone(880, 'square', 0.1); setTimeout(() => playTone(440, 'square', 0.15), 100); }
+};
+
+/* ══════════════════════════════════════════
+   LÓGICA DO MOTOR
+══════════════════════════════════════════ */
 const PIECES = {wK:'♔',wQ:'♕',wR:'♖',wB:'♗',wN:'♘',wP:'♙',bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:'♟'};
 const VALUES = { P: 1, N: 3, B: 3, R: 5, Q: 9, K: 0 };
 let board = [
@@ -59,32 +111,33 @@ let turn = 'w', selected = null, legalMoves = [];
 const cl = p => p ? p[0] : null;
 const tp = p => p ? p.slice(1) : null;
 
-// MOTOR DE REGRAS OFICIAIS
-function getLegalMoves(r, c) {
-    const piece = board[r][c];
+// REGRAS OFICIAIS (RAW MOVES)
+function getRawMoves(r, c, targetBoard) {
+    const piece = targetBoard[r][c];
     if (!piece) return [];
     const color = cl(piece), type = tp(piece);
     let moves = [];
-    const isEnemy = (nr, nc) => board[nr][nc] && cl(board[nr][nc]) !== color;
-    const isEmpty = (nr, nc) => !board[nr][nc];
     const inB = (nr, nc) => nr >= 0 && nr < 8 && nc >= 0 && nc < 8;
 
     if (type === 'P') {
         const dir = color === 'w' ? -1 : 1;
-        if (inB(r+dir, c) && isEmpty(r+dir, c)) {
+        if (inB(r+dir, c) && !targetBoard[r+dir][c]) {
             moves.push([r+dir, c]);
-            if (r === (color === 'w' ? 6 : 1) && isEmpty(r+2*dir, c)) moves.push([r+2*dir, c]);
+            if (r === (color === 'w' ? 6 : 1) && !targetBoard[r+2*dir][c]) moves.push([r+2*dir, c]);
         }
         [[-1,dir],[1,dir]].forEach(d => {
-            if (inB(r+d[1], c+d[0]) && isEnemy(r+d[1], c+d[0])) moves.push([r+d[1], c+d[0]]);
+            let nr = r + d[1], nc = c + d[0];
+            if (inB(nr, nc) && targetBoard[nr][nc] && cl(targetBoard[nr][nc]) !== color) moves.push([nr, nc]);
         });
     } else if (type === 'N') {
         [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(m => {
-            if (inB(r+m[0], c+m[1]) && (isEmpty(r+m[0], c+m[1]) || isEnemy(r+m[0], c+m[1]))) moves.push([r+m[0], c+m[1]]);
+            let nr = r+m[0], nc = c+m[1];
+            if (inB(nr, nc) && (!targetBoard[nr][nc] || cl(targetBoard[nr][nc]) !== color)) moves.push([nr, nc]);
         });
     } else if (type === 'K') {
         [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]].forEach(m => {
-            if (inB(r+m[0], c+m[1]) && (isEmpty(r+m[0], c+m[1]) || isEnemy(r+m[0], c+m[1]))) moves.push([r+m[0], c+m[1]]);
+            let nr = r+m[0], nc = c+m[1];
+            if (inB(nr, nc) && (!targetBoard[nr][nc] || cl(targetBoard[nr][nc]) !== color)) moves.push([nr, nc]);
         });
     } else {
         let dirs = [];
@@ -93,22 +146,48 @@ function getLegalMoves(r, c) {
         dirs.forEach(d => {
             let nr = r + d[0], nc = c + d[1];
             while (inB(nr, nc)) {
-                if (isEmpty(nr, nc)) { moves.push([nr, nc]); nr += d[0]; nc += d[1]; }
-                else { if (isEnemy(nr, nc)) moves.push([nr, nc]); break; }
+                if (!targetBoard[nr][nc]) { moves.push([nr, nc]); nr += d[0]; nc += d[1]; }
+                else { if (cl(targetBoard[nr][nc]) !== color) moves.push([nr, nc]); break; }
             }
         });
     }
     return moves;
 }
 
-// IA GAYA v0.6
+// TRAVA DE SEGURANÇA (NÃO PERMITE FICAR EM XEQUE)
+function isCheck(color, targetBoard) {
+    let kingPos = null;
+    for(let r=0; r<8; r++) for(let c=0; c<8; c++) if(targetBoard[r][c] === color+'K') kingPos = [r,c];
+    if(!kingPos) return false;
+    const enemy = color === 'w' ? 'b' : 'w';
+    for(let r=0; r<8; r++) for(let c=0; c<8; c++) {
+        if(targetBoard[r][c] && cl(targetBoard[r][c]) === enemy) {
+            if(getRawMoves(r, c, targetBoard).some(m => m[0] === kingPos[0] && m[1] === kingPos[1])) return true;
+        }
+    }
+    return false;
+}
+
+function getLegalMoves(r, c) {
+    const raw = getRawMoves(r, c, board);
+    const color = cl(board[r][c]);
+    return raw.filter(m => {
+        const tempBoard = board.map(row => [...row]);
+        tempBoard[m[0]][m[1]] = tempBoard[r][c];
+        tempBoard[r][c] = null;
+        return !isCheck(color, tempBoard);
+    });
+}
+
+// IA GAYA v0.6 [ESTRATEGISTA]
 function gayaMove() {
     let all = [];
     for(let r=0; r<8; r++) for(let c=0; c<8; c++) {
         if(board[r][c] && cl(board[r][c]) === 'b') {
             getLegalMoves(r, c).forEach(m => {
-                let s = board[m[0]][m[1]] ? VALUES[tp(board[m[0]][m[1]])]*10 : 0;
-                all.push({fr:r, fc:c, tr:m[0], tc:m[1], s: s + Math.random()});
+                let score = board[m[0]][m[1]] ? VALUES[tp(board[m[0]][m[1]])]*10 : 0;
+                if (m[0] > r) score += 0.5; // Incentiva avançar
+                all.push({fr:r, fc:c, tr:m[0], tc:m[1], s: score + Math.random()});
             });
         }
     }
@@ -118,21 +197,38 @@ function gayaMove() {
 
 function executeMove(fr, fc, tr, tc) {
     const target = board[tr][tc];
-    if(target) spawnParticles(window.innerWidth/2, window.innerHeight/2, cl(target));
+    if(target) {
+        sounds.capture();
+        spawnParticles(window.innerWidth/2, window.innerHeight/2, cl(target));
+    } else {
+        sounds.move();
+    }
+    
     board[tr][tc] = board[fr][fc];
     board[fr][fc] = null;
     turn = turn === 'w' ? 'b' : 'w';
+
+    const boardEl = document.getElementById('board');
+    if (isCheck(turn, board)) {
+        sounds.check();
+        boardEl.classList.add('glitch-active');
+        document.getElementById('status').textContent = "⚠️ ALERTA: SISTEMA EM XEQUE";
+    } else {
+        boardEl.classList.remove('glitch-active');
+        document.getElementById('status').textContent = turn === 'w' ? "► SUA VEZ, OPERADOR" : "► GAYA PENSANDO...";
+    }
+
     render();
     updateAdvantage();
     if(turn === 'b') gayaMove();
 }
 
 function spawnParticles(x, y, color) {
-    for(let i=0; i<15; i++) {
+    for(let i=0; i<20; i++) {
         const p = document.createElement('div');
         p.className = 'particle';
-        const a = Math.random()*Math.PI*2, d = 40+Math.random()*60;
-        p.style.cssText = `left:${x}px;top:${y}px;width:4px;height:4px;background:${color==='w'?'#00ff88':'#ff6b35'};--p-tx:${Math.cos(a)*d}px;--p-ty:${Math.sin(a)*d}px;--p-dur:0.6s;`;
+        const a = Math.random()*Math.PI*2, d = 50+Math.random()*80;
+        p.style.cssText = `left:${x}px;top:${y}px;width:5px;height:5px;background:${color==='w'?'#00ff88':'#ff6b35'};--p-tx:${Math.cos(a)*d}px;--p-ty:${Math.sin(a)*d}px;--p-dur:0.7s;`;
         document.body.appendChild(p);
         p.addEventListener('animationend', () => p.remove());
     }
@@ -152,6 +248,7 @@ function render() {
         sq.className = `sq ${(r+c)%2===0?'light':'dark'}`;
         if(selected && selected[0]===r && selected[1]===c) sq.classList.add('selected');
         if(legalMoves.some(m => m[0]===r && m[1]===c)) sq.classList.add('moveable');
+        
         const p = board[r][c];
         if(p) {
             const pEl = document.createElement('span');
@@ -172,7 +269,9 @@ function render() {
         bEl.appendChild(sq);
     }
 }
+
 render();
+updateAdvantage();
 </script>
 </body>
 </html>
